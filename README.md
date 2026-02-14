@@ -5,6 +5,10 @@ A lightweight CLI tool for testing, comparing, and iterating on LLM prompts acro
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+<p align="center">
+  <img src="docs/demo.svg" alt="promptlab demo output" width="680">
+</p>
+
 ## What is PromptLab?
 
 PromptLab solves the common AI engineering workflow pain point: **testing and comparing prompts across multiple LLM models**. Instead of copy-pasting prompts between different UIs or writing custom scripts, PromptLab lets you:
@@ -271,23 +275,6 @@ Run them:
 
 ```bash
 promptlab run examples/classify-sentiment.yaml --models gpt-4o,claude-sonnet-4
-```
-
-## Output Format
-
-PromptLab shows results in a clean table format:
-
-```
-┌─────┬──────────────┬────────────────────┬──────────┬───────────┬───────┬────────┬──────────┬──────┐
-│Test │ Model        │ Input             │ Expected │ Actual    │ Match │ Tokens │ Cost     │ Time │
-├─────┼──────────────┼────────────────────┼──────────┼───────────┼───────┼────────┼──────────┼──────┤
-│ 1   │ gpt-4o       │ text: I love...   │ positive │ positive  │   ✓   │ 45     │ $0.0023  │ 234ms│
-│     │ claude-sonnet│ text: I love...   │ positive │ positive  │   ✓   │ 41     │ $0.0019  │ 187ms│
-│ 2   │ gpt-4o       │ text: This is...  │ negative │ negative  │   ✓   │ 48     │ $0.0025  │ 198ms│
-│     │ claude-sonnet│ text: This is...  │ negative │ negative  │   ✓   │ 43     │ $0.0021  │ 165ms│
-├─────┼──────────────┼────────────────────┼──────────┼───────────┼───────┼────────┼──────────┼──────┤
-│Total│              │                   │          │           │4/4 80%│ 177    │ $0.0088  │      │
-└─────┴──────────────┴────────────────────┴──────────┴───────────┴───────┴────────┴──────────┴──────┘
 ```
 
 ## Configuration
