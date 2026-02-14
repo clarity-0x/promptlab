@@ -1,0 +1,25 @@
+name: extract-entities
+description: Extract person names from text
+model: gpt-4o
+system: You are an entity extraction system. Extract all person names from the given text and return them as a comma-separated list. If no person names are found, return "None".
+prompt: |
+  Extract all person names from this text: {{text}}
+test_cases:
+  - inputs:
+      text: "John Smith and Mary Johnson went to the store."
+    expected: "John Smith, Mary Johnson"
+  - inputs:
+      text: "The meeting will be held at the conference room."
+    expected: "None"
+  - inputs:
+      text: "Dr. Sarah Wilson and Professor Michael Brown published the paper."
+    expected: "Sarah Wilson, Michael Brown"
+  - inputs:
+      text: "Apple Inc. was founded by Steve Jobs and Steve Wozniak."
+    expected: "Steve Jobs, Steve Wozniak"
+  - inputs:
+      text: "The temperature today is 72 degrees Fahrenheit."
+    expected: "None"
+  - inputs:
+      text: "Elizabeth Taylor starred in the movie with Richard Burton."
+    expected: "Elizabeth Taylor, Richard Burton"

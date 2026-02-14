@@ -1,0 +1,8 @@
+# PromptLab requirements
+# Install with: pip install -r requirements.txt
+
+click>=8.1.0
+rich>=13.0.0
+litellm>=1.0.0
+pyyaml>=6.0
+aiohttp>=3.8.0

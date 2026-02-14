@@ -1,0 +1,25 @@
+name: classify-sentiment
+description: Classify text sentiment as positive, negative, or neutral
+model: gpt-4o
+system: You are a sentiment classifier. Respond with exactly one word: positive, negative, or neutral.
+prompt: |
+  Classify the sentiment of this text: {{text}}
+test_cases:
+  - inputs:
+      text: "I love this product, it's amazing!"
+    expected: positive
+  - inputs:
+      text: "This is the worst experience ever."
+    expected: negative
+  - inputs:
+      text: "The weather is okay today."
+    expected: neutral
+  - inputs:
+      text: "Absolutely fantastic! Best purchase I've made this year."
+    expected: positive
+  - inputs:
+      text: "Completely disappointed. Would not recommend."
+    expected: negative
+  - inputs:
+      text: "It works as expected."
+    expected: neutral
