@@ -10,7 +10,7 @@ from rich.panel import Panel
 from rich.columns import Columns
 from rich import box
 
-from .runner import TestResult
+from .models import TestResult
 
 
 def display_results(

@@ -10,7 +10,6 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from .config import load_prompt_config, get_config_hash
-from .runner import PromptRunner
 from .storage import Storage
 from .display import display_results, display_run_history, display_run_details
 from .compare import RunComparison
@@ -71,7 +70,8 @@ def run(
         
         console.print(f"[blue]Run ID:[/blue] {run_id}")
         
-        # Run tests
+        # Run tests (lazy import to avoid loading litellm at startup)
+        from .runner import PromptRunner
         runner = PromptRunner(max_concurrent=max_concurrent, timeout=timeout)
         
         total_tasks = len(config.test_cases) * len(model_list)
