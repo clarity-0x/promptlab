@@ -3,9 +3,7 @@
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-
-from .config import PromptConfig
+from typing import Any, Dict, List, Optional
 
 
 class Storage:
@@ -145,6 +143,8 @@ class Storage:
                     try:
                         inputs = json.loads(row["inputs"])
                     except json.JSONDecodeError:
+                        # Corrupt or legacy non-JSON data in the inputs column;
+                        # treat as missing rather than crashing the results view.
                         inputs = None
                 
                 results.append({
@@ -190,5 +190,5 @@ class Storage:
         import string
         
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        suffix = ''.join(random.choices(string.ascii_lowercase, k=4))
+        suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
         return f"{timestamp}-{suffix}"

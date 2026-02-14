@@ -2,7 +2,7 @@
 
 import asyncio
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from .config import PromptConfig, TestCase, render_prompt
 from .models import TestResult
@@ -113,7 +113,10 @@ class PromptRunner:
                     import litellm as _litellm
                     cost = _litellm.completion_cost(response)
                 except Exception:
-                    # Cost calculation may fail for some models
+                    # Broad catch intentional: litellm cost calculation can fail
+                    # for many reasons (unsupported model, missing pricing data,
+                    # unexpected response format). Cost is non-critical metadata,
+                    # so we silently fall back to None rather than aborting the run.
                     pass
                 
                 # Determine match mode: test-specific, then config-specific, then default

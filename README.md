@@ -28,7 +28,7 @@ pip install promptlab
 Or for development:
 
 ```bash
-git clone https://github.com/yourusername/promptlab.git
+git clone https://github.com/clarity-0x/promptlab.git
 cd promptlab
 pip install -e ".[dev]"
 ```
@@ -251,10 +251,10 @@ test_cases:
 
 PromptLab uses [LiteLLM](https://github.com/BerriAI/litellm) under the hood, supporting 100+ models:
 
-- **OpenAI**: `gpt-4o`, `gpt-4-turbo`, `gpt-3.5-turbo`
-- **Anthropic**: `claude-3-sonnet-20240229`, `claude-3-opus-20240229`
-- **Google**: `gemini-pro`, `gemini-pro-vision`
-- **Cohere**: `command-r`, `command-r-plus`
+- **OpenAI**: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `o3-mini`
+- **Anthropic**: `claude-sonnet-4`, `claude-haiku-4`, `claude-opus-4`
+- **Google**: `gemini-2.0-flash`, `gemini-2.5-pro`
+- **Cohere**: `command-r`, `command-r-plus`, `command-a`
 - **And many more...**
 
 Set your API keys as environment variables (e.g., `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`).
@@ -265,6 +265,7 @@ Check out the `examples/` directory for ready-to-run prompt files:
 
 - [`classify-sentiment.yaml`](examples/classify-sentiment.yaml) - Sentiment classification
 - [`extract-entities.yaml`](examples/extract-entities.yaml) - Named entity extraction
+- [`extract-keywords.yaml`](examples/extract-keywords.yaml) - Keyword extraction with multiple match modes
 
 Run them:
 
@@ -297,7 +298,7 @@ PromptLab stores results in `~/.promptlab/results.db` by default. No additional 
 
 ```bash
 # Clone and install for development
-git clone https://github.com/yourusername/promptlab.git
+git clone https://github.com/clarity-0x/promptlab.git
 cd promptlab
 pip install -e ".[dev]"
 
@@ -327,14 +328,12 @@ mypy promptlab/
 ## Roadmap
 
 - [ ] Watch mode (`promptlab watch prompt.yaml`)
-- [ ] JSON output format for CI/CD integration  
 - [ ] Prompt template inheritance and composition
-- [ ] Custom evaluation metrics beyond exact match
 - [ ] Integration with popular evaluation frameworks
 
 ## Contributing
 
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions welcome! Open an issue or submit a PR.
 
 ## License
 

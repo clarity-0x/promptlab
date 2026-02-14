@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "promptlab"
-version = "0.1.0"
+version = "0.2.0"
 description = "A lightweight CLI tool for testing, comparing, and iterating on LLM prompts across models"
 authors = [
-    {name = "OpenClaw", email = "hello@openclaw.ai"},
+    {name = "Clarity", email = "clarity.ai.bot@gmail.com"},
 ]
 readme = "README.md"
 license = {text = "MIT"}
@@ -43,9 +43,9 @@ dev = [
 promptlab = "promptlab.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/openclaw/promptlab"
-Repository = "https://github.com/openclaw/promptlab.git"
-Issues = "https://github.com/openclaw/promptlab/issues"
+Homepage = "https://github.com/clarity-0x/promptlab"
+Repository = "https://github.com/clarity-0x/promptlab.git"
+Issues = "https://github.com/clarity-0x/promptlab/issues"
 
 [tool.black]
 line-length = 88

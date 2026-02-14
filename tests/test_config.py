@@ -97,7 +97,8 @@ def test_load_missing_file():
 def test_load_invalid_yaml():
     """Test loading invalid YAML."""
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-        f.write('invalid: yaml: content:')
+        # Clearly invalid YAML: unclosed bracket that cannot be parsed
+        f.write('[unclosed bracket')
         temp_path = Path(f.name)
     
     try:

@@ -9,7 +9,9 @@ import click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from .config import load_prompt_config, get_config_hash, validate_prompt_file
+from .config import load_prompt_config
+from .utils import get_config_hash
+from .validation import validate_prompt_file
 from .storage import Storage
 from .display import display_results, display_run_history, display_run_details
 from .compare import RunComparison
@@ -19,7 +21,7 @@ console = Console()
 
 
 @click.group()
-@click.version_option()
+@click.version_option(version=__import__('promptlab').__version__, prog_name="promptlab")
 def main() -> None:
     """PromptLab: A lightweight CLI tool for testing LLM prompts across models."""
     pass
@@ -91,12 +93,7 @@ def run(
         
         # Create a temporary config with filtered test cases
         if test is not None:
-            from types import SimpleNamespace
-            filtered_config = SimpleNamespace()
-            for attr in dir(config):
-                if not attr.startswith('_'):
-                    setattr(filtered_config, attr, getattr(config, attr))
-            filtered_config.test_cases = test_cases_to_run
+            filtered_config = config.copy_with_test_cases(test_cases_to_run)
         else:
             filtered_config = config
         
@@ -195,32 +192,33 @@ def init(name: str) -> None:
         console.print(f"[red]Error:[/red] File {filename} already exists")
         sys.exit(1)
     
-    template = f"""name: {name}
-description: Description of what this prompt does
-model: gpt-4o
-match: exact  # Match mode: exact, contains, starts_with, regex, or semantic
-parameters:   # Global model parameters
-  temperature: 0.0
-  max_tokens: 100
-system: You are a helpful assistant.
-
-prompt: |
-  Your prompt template here. Use {{{{variable_name}}}} for variables.
-  
-  Input: {{{{input}}}}
-
-test_cases:
-  - inputs:
-      input: "Example input text"
-    expected: "Expected output"
-    # match: exact           # Override global match mode for this test
-    # parameters:            # Override global parameters for this test
-    #   temperature: 0.5
-  
-  - inputs:
-      input: "Another example"
-    expected: "Another expected output"
-"""
+    template = (
+        "name: " + name + "\n"
+        "description: Description of what this prompt does\n"
+        "model: gpt-4o\n"
+        "match: exact  # Match mode: exact, contains, starts_with, regex, or semantic\n"
+        "parameters:   # Global model parameters\n"
+        "  temperature: 0.0\n"
+        "  max_tokens: 100\n"
+        "system: You are a helpful assistant.\n"
+        "\n"
+        "prompt: |\n"
+        "  Your prompt template here. Use {{variable_name}} for variables.\n"
+        "  \n"
+        "  Input: {{input}}\n"
+        "\n"
+        "test_cases:\n"
+        "  - inputs:\n"
+        '      input: "Example input text"\n'
+        '    expected: "Expected output"\n'
+        "    # match: exact           # Override global match mode for this test\n"
+        "    # parameters:            # Override global parameters for this test\n"
+        "    #   temperature: 0.5\n"
+        "  \n"
+        "  - inputs:\n"
+        '      input: "Another example"\n'
+        '    expected: "Another expected output"\n'
+    )
     
     try:
         with open(filename, 'w', encoding='utf-8') as f:
