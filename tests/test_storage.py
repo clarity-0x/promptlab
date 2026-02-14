@@ -73,6 +73,7 @@ def test_save_and_get_results(temp_storage):
         model="gpt-4o",
         response="Hello world!",
         expected="Hello world!",
+        inputs={"text": "Hello world!"},
         tokens_in=10,
         tokens_out=5,
         cost=0.0001,
@@ -85,6 +86,7 @@ def test_save_and_get_results(temp_storage):
         model="gpt-4o",
         response=None,
         expected="Goodbye",
+        inputs={"text": "Goodbye"},
         error="Timeout error"
     )
     
@@ -99,6 +101,7 @@ def test_save_and_get_results(temp_storage):
     assert result1["model"] == "gpt-4o"
     assert result1["response"] == "Hello world!"
     assert result1["expected"] == "Hello world!"
+    assert result1["inputs"] == {"text": "Hello world!"}
     assert result1["tokens_in"] == 10
     assert result1["tokens_out"] == 5
     assert result1["cost"] == 0.0001
@@ -111,6 +114,7 @@ def test_save_and_get_results(temp_storage):
     assert result2["model"] == "gpt-4o"
     assert result2["response"] is None
     assert result2["expected"] == "Goodbye"
+    assert result2["inputs"] == {"text": "Goodbye"}
     assert result2["error"] == "Timeout error"
 
 
@@ -185,6 +189,7 @@ def test_multiple_models_same_run(temp_storage):
         model="gpt-4o",
         response="GPT response",
         expected="Expected output",
+        inputs={"test": "input"},
         cost=0.001
     )
     
@@ -194,6 +199,7 @@ def test_multiple_models_same_run(temp_storage):
         model="claude-sonnet",
         response="Claude response",
         expected="Expected output",
+        inputs={"test": "input"},
         cost=0.002
     )
     
@@ -229,7 +235,8 @@ def test_database_persistence(temp_storage):
         test_case_idx=0,
         model="gpt-4o",
         response="Persistent response",
-        expected="Expected"
+        expected="Expected",
+        inputs={"persistent": "test"}
     )
     
     # Create new storage instance with same database

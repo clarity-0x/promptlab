@@ -7,7 +7,6 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 from rich.panel import Panel
-from rich.columns import Columns
 from rich import box
 
 from .models import TestResult
@@ -198,7 +197,7 @@ def display_run_details(
         test_result = TestResult(
             test_case_idx=result["test_case_idx"],
             model=result["model"],
-            inputs={"input": "..."}, # We don't store full inputs, just show placeholder
+            inputs=result.get("inputs") or {"input": "..."},
             expected=result["expected"],
             response=result["response"],
             tokens_in=result["tokens_in"],

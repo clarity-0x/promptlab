@@ -1,0 +1,42 @@
+name: extract-keywords
+description: Extract keywords from text using different match modes
+model: gpt-4o
+match: contains  # Default to contains matching
+parameters:
+  temperature: 0.1
+  max_tokens: 100
+system: You are a keyword extraction system. Extract the most important keywords from the given text.
+prompt: |
+  Extract the main keywords from this text: {{text}}
+
+test_cases:
+  - inputs:
+      text: "Machine learning algorithms are transforming data science and artificial intelligence applications."
+    expected: "machine learning"
+    # Uses default 'contains' match - passes if response contains "machine learning"
+  
+  - inputs:
+      text: "Python programming language is popular for web development and data analysis."
+    expected: "Python"
+    match: starts_with  # Response should start with "Python"
+  
+  - inputs:
+      text: "Cloud computing platforms like AWS and Azure enable scalable infrastructure solutions."
+    expected: "cloud.*computing"
+    match: regex  # Use regex to match "cloud" followed by "computing" with anything in between
+  
+  - inputs:
+      text: "Cybersecurity threats require robust defense mechanisms and continuous monitoring systems."
+    expected: "cybersecurity, threats, defense"
+    match: contains  # Should contain all these keywords somewhere
+  
+  - inputs:
+      text: "Blockchain technology enables decentralized financial transactions and smart contracts."
+    expected: "blockchain, technology, decentralized"
+    # Uses semantic matching - LLM judges if response conveys similar meaning
+    match: semantic
+  
+  - inputs:
+      text: "Mobile applications use responsive design patterns for optimal user experience."
+    expected: "mobile|applications|responsive|design"
+    match: regex  # Any of these keywords should be present

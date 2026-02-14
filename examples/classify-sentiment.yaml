@@ -1,6 +1,10 @@
 name: classify-sentiment
 description: Classify text sentiment as positive, negative, or neutral
 model: gpt-4o
+match: exact  # Default match mode for all test cases
+parameters:   # Global parameters for all API calls
+  temperature: 0.0
+  max_tokens: 50
 system: You are a sentiment classifier. Respond with exactly one word: positive, negative, or neutral.
 prompt: |
   Classify the sentiment of this text: {{text}}
@@ -14,9 +18,12 @@ test_cases:
   - inputs:
       text: "The weather is okay today."
     expected: neutral
+    match: contains  # Override match mode for this test - allow partial matches
   - inputs:
       text: "Absolutely fantastic! Best purchase I've made this year."
     expected: positive
+    parameters:  # Override temperature for this specific test
+      temperature: 0.2
   - inputs:
       text: "Completely disappointed. Would not recommend."
     expected: negative

@@ -42,11 +42,17 @@ def main() -> None:
     default=30,
     help='Timeout per API call in seconds (default: 30)'
 )
+@click.option(
+    '--test', 
+    type=int,
+    help='Run only test case N (1-indexed)'
+)
 def run(
     prompt_file: Path,
     models: str,
     max_concurrent: int,
-    timeout: int
+    timeout: int,
+    test: Optional[int]
 ) -> None:
     """Run all test cases in a prompt file."""
     try:
@@ -61,7 +67,16 @@ def run(
         # Parse models
         model_list = [m.strip() for m in models.split(',')]
         console.print(f"[blue]Models:[/blue] {', '.join(model_list)}")
-        console.print(f"[blue]Test cases:[/blue] {len(config.test_cases)}")
+        # Filter test cases if --test specified
+        test_cases_to_run = config.test_cases
+        if test is not None:
+            if test < 1 or test > len(config.test_cases):
+                console.print(f"[red]Error:[/red] Test case {test} not found. Valid range: 1-{len(config.test_cases)}")
+                sys.exit(1)
+            test_cases_to_run = [config.test_cases[test - 1]]
+            console.print(f"[blue]Running test case {test} only[/blue]")
+        
+        console.print(f"[blue]Test cases:[/blue] {len(test_cases_to_run)}")
         
         # Initialize storage and create run
         storage = Storage()
@@ -74,7 +89,18 @@ def run(
         from .runner import PromptRunner
         runner = PromptRunner(max_concurrent=max_concurrent, timeout=timeout)
         
-        total_tasks = len(config.test_cases) * len(model_list)
+        # Create a temporary config with filtered test cases
+        if test is not None:
+            from types import SimpleNamespace
+            filtered_config = SimpleNamespace()
+            for attr in dir(config):
+                if not attr.startswith('_'):
+                    setattr(filtered_config, attr, getattr(config, attr))
+            filtered_config.test_cases = test_cases_to_run
+        else:
+            filtered_config = config
+        
+        total_tasks = len(test_cases_to_run) * len(model_list)
         
         with Progress(
             SpinnerColumn(),
@@ -84,7 +110,7 @@ def run(
             task = progress.add_task(f"Running {total_tasks} tests...", total=None)
             
             # Run all tests
-            results = asyncio.run(runner.run_all(config, model_list))
+            results = asyncio.run(runner.run_all(filtered_config, model_list))
         
         console.print(f"[green]✓[/green] Completed {len(results)} tests")
         
@@ -96,6 +122,7 @@ def run(
                 model=result.model,
                 response=result.response,
                 expected=result.expected,
+                inputs=result.inputs,
                 tokens_in=result.tokens_in,
                 tokens_out=result.tokens_out,
                 cost=result.cost,
@@ -153,6 +180,105 @@ def compare(run1_id: str, run2_id: str) -> None:
         comparison = RunComparison(storage)
         comparison.compare_runs(run1_id, run2_id, console)
         
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {str(e)}")
+        sys.exit(1)
+
+
+@main.command()
+@click.argument('name')
+def init(name: str) -> None:
+    """Create a starter YAML file with sensible defaults."""
+    filename = f"{name}.yaml"
+    
+    if Path(filename).exists():
+        console.print(f"[red]Error:[/red] File {filename} already exists")
+        sys.exit(1)
+    
+    template = f"""name: {name}
+description: Description of what this prompt does
+model: gpt-4o
+match: exact  # Match mode: exact, contains, starts_with, regex, or semantic
+parameters:   # Global model parameters
+  temperature: 0.0
+  max_tokens: 100
+system: You are a helpful assistant.
+
+prompt: |
+  Your prompt template here. Use {{{{variable_name}}}} for variables.
+  
+  Input: {{{{input}}}}
+
+test_cases:
+  - inputs:
+      input: "Example input text"
+    expected: "Expected output"
+    # match: exact           # Override global match mode for this test
+    # parameters:            # Override global parameters for this test
+    #   temperature: 0.5
+  
+  - inputs:
+      input: "Another example"
+    expected: "Another expected output"
+"""
+    
+    try:
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(template)
+        console.print(f"[green]✓[/green] Created {filename}")
+        console.print(f"[blue]Next steps:[/blue]")
+        console.print(f"  1. Edit {filename} with your prompt and test cases")
+        console.print(f"  2. Run: promptlab run {filename}")
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {str(e)}")
+        sys.exit(1)
+
+
+@main.command()
+@click.argument('run_id')
+@click.option('--format', 'output_format', type=click.Choice(['json', 'csv']), default='json', help='Output format (default: json)')
+def export(run_id: str, output_format: str) -> None:
+    """Export run results to JSON or CSV format."""
+    try:
+        storage = Storage()
+        run = storage.get_run(run_id)
+        
+        if not run:
+            console.print(f"[red]Run {run_id} not found[/red]")
+            sys.exit(1)
+        
+        results = storage.get_results(run_id)
+        
+        if output_format == 'json':
+            import json
+            output = {
+                'run': {
+                    'id': run['id'],
+                    'timestamp': run['timestamp'].isoformat(),
+                    'prompt_file': run['prompt_file'],
+                    'models': run['models'],
+                    'config_hash': run['config_hash']
+                },
+                'results': results
+            }
+            print(json.dumps(output, indent=2, default=str))
+        
+        elif output_format == 'csv':
+            import csv
+            import sys
+            
+            writer = csv.DictWriter(
+                sys.stdout,
+                fieldnames=['test_case_idx', 'model', 'expected', 'response', 'tokens_in', 'tokens_out', 'cost', 'latency_ms', 'error', 'inputs']
+            )
+            writer.writeheader()
+            for result in results:
+                # Convert inputs dict to string for CSV
+                result_copy = result.copy()
+                if result_copy['inputs']:
+                    result_copy['inputs'] = str(result_copy['inputs'])
+                writer.writerow(result_copy)
+    
     except Exception as e:
         console.print(f"[red]Error:[/red] {str(e)}")
         sys.exit(1)

@@ -35,7 +35,13 @@ pip install -e ".[dev]"
 
 ### Your First Prompt Test
 
-1. Create a prompt file `sentiment.yaml`:
+1. Use the init command to create a starter file:
+
+```bash
+promptlab init sentiment
+```
+
+Or create a prompt file `sentiment.yaml` manually:
 
 ```yaml
 name: classify-sentiment
@@ -90,6 +96,15 @@ Async execution with configurable concurrency limits.
 
 ## CLI Commands
 
+### Initialize New Prompt Files
+
+```bash
+# Create a new prompt file with sensible defaults
+promptlab init my-prompt
+
+# Creates my-prompt.yaml with template and examples
+```
+
 ### Run Tests
 
 ```bash
@@ -98,6 +113,9 @@ promptlab run prompt.yaml
 
 # Run across multiple models
 promptlab run prompt.yaml --models gpt-4o,claude-sonnet-4
+
+# Run only a specific test case (1-indexed)
+promptlab run prompt.yaml --test 3
 
 # Customize concurrency and timeout
 promptlab run prompt.yaml --max-concurrent 5 --timeout 45
@@ -120,12 +138,27 @@ promptlab show 20240315-143022-abcd
 promptlab compare 20240315-143022-abcd 20240315-144531-efgh
 ```
 
+### Export Results
+
+```bash
+# Export run results as JSON
+promptlab export 20240315-143022-abcd --format json
+
+# Export run results as CSV
+promptlab export 20240315-143022-abcd --format csv
+```
+
 ## YAML Format Reference
 
 ```yaml
 name: your-prompt-name              # Required: Unique identifier
 description: What this prompt does  # Optional: Human description  
 model: gpt-4o                      # Optional: Default model (default: gpt-4o)
+match: exact                       # Optional: Default match mode (default: exact)
+parameters:                        # Optional: Global model parameters
+  temperature: 0.0
+  max_tokens: 100
+  top_p: 1.0
 system: You are a helpful assistant # Optional: System message
 
 prompt: |                          # Required: The prompt template
@@ -136,11 +169,67 @@ test_cases:                        # Required: List of test cases
       variable1: value1
       variable2: value2
     expected: expected output      # What you expect the model to return
+    match: contains                # Optional: Override match mode for this test
+    parameters:                    # Optional: Override parameters for this test
+      temperature: 0.5
     
   - inputs:
       variable1: different value
     expected: different expected output
 ```
+
+### Match Modes
+
+PromptLab supports different ways to evaluate if a model response matches the expected output:
+
+- **`exact`** (default): Case-insensitive exact match after trimming whitespace
+- **`contains`**: Response must contain the expected string (case-insensitive)
+- **`starts_with`**: Response must start with the expected string (case-insensitive)
+- **`regex`**: Expected value is treated as a regex pattern to match against response
+- **`semantic`**: Uses an LLM to judge if the response matches the expected intent
+
+```yaml
+test_cases:
+  - inputs:
+      text: "I love this!"
+    expected: "positive"
+    match: exact                   # Must be exactly "positive"
+    
+  - inputs:
+      text: "Great product"
+    expected: "positive"
+    match: contains                # Response must contain "positive" somewhere
+    
+  - inputs:
+      text: "Excellent service"
+    expected: "Positive"
+    match: starts_with             # Response must start with "positive" 
+    
+  - inputs:
+      text: "Price is $25.99"
+    expected: "\\$\\d+\\.\\d+"      # Regex for currency format
+    match: regex
+    
+  - inputs:
+      text: "Amazing experience!"
+    expected: "customer is satisfied"  # LLM judges semantic similarity
+    match: semantic
+```
+
+### Model Parameters
+
+Control model behavior with parameters that get passed to the API:
+
+```yaml
+parameters:
+  temperature: 0.0        # Randomness (0.0 = deterministic, 2.0 = very random)
+  max_tokens: 150         # Maximum response length
+  top_p: 1.0             # Nucleus sampling
+  frequency_penalty: 0.0  # Penalize repeated tokens
+  presence_penalty: 0.0   # Penalize new topics
+```
+
+Parameters can be set globally or overridden per test case.
 
 ### Variable Substitution
 

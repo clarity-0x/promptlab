@@ -1,6 +1,6 @@
 """Compare and diff functionality for promptlab runs."""
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
 
 from rich.console import Console
 from rich.table import Table
@@ -294,11 +294,21 @@ class RunComparison:
         }
     
     def _response_matches_expected(self, result: Dict[str, Any]) -> bool:
-        """Check if a response matches the expected output."""
-        if not result["response"] or result["error"]:
+        """Check if a response matches the expected output using the appropriate match mode."""
+        if not result["response"] or result.get("error"):
             return False
         
-        return result["response"].strip().lower() == result["expected"].strip().lower()
+        # Use the matching module for consistent evaluation
+        from .matching import check_match
+        
+        # Results from storage may include match_mode; default to exact
+        mode = result.get("match_mode", "exact")
+        # Don't use semantic matching in comparisons (requires API call)
+        if mode == "semantic":
+            mode = "exact"
+        
+        match_result = check_match(result["response"], result["expected"], mode)
+        return match_result.matches
     
     def _format_delta(self, value: int) -> str:
         """Format an integer delta with +/- sign."""

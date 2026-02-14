@@ -15,12 +15,16 @@ def test_load_valid_config():
         'name': 'test-prompt',
         'description': 'A test prompt',
         'model': 'gpt-4o',
+        'match': 'contains',
+        'parameters': {'temperature': 0.5},
         'system': 'You are a helpful assistant.',
         'prompt': 'Say hello to {{name}}',
         'test_cases': [
             {
                 'inputs': {'name': 'Alice'},
-                'expected': 'Hello Alice!'
+                'expected': 'Hello Alice!',
+                'match': 'exact',
+                'parameters': {'max_tokens': 50}
             }
         ]
     }
@@ -35,11 +39,15 @@ def test_load_valid_config():
         assert config.name == 'test-prompt'
         assert config.description == 'A test prompt'
         assert config.model == 'gpt-4o'
+        assert config.match == 'contains'
+        assert config.parameters == {'temperature': 0.5}
         assert config.system == 'You are a helpful assistant.'
         assert config.prompt == 'Say hello to {{name}}'
         assert len(config.test_cases) == 1
         assert config.test_cases[0].inputs == {'name': 'Alice'}
         assert config.test_cases[0].expected == 'Hello Alice!'
+        assert config.test_cases[0].match == 'exact'
+        assert config.test_cases[0].parameters == {'max_tokens': 50}
         
     finally:
         temp_path.unlink()
@@ -68,9 +76,13 @@ def test_load_minimal_config():
         assert config.name == 'minimal-prompt'
         assert config.description is None
         assert config.model == 'gpt-4o'  # Default
+        assert config.match == 'exact'  # Default
+        assert config.parameters == {}  # Default
         assert config.system is None
         assert config.prompt == 'Simple prompt'
         assert len(config.test_cases) == 1
+        assert config.test_cases[0].match is None  # No override
+        assert config.test_cases[0].parameters == {}  # Default
         
     finally:
         temp_path.unlink()

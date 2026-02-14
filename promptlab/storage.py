@@ -46,9 +46,18 @@ class Storage:
                     cost REAL,
                     latency_ms INTEGER,
                     error TEXT,
+                    inputs TEXT,
                     FOREIGN KEY (run_id) REFERENCES runs (id)
                 )
             """)
+            
+            # Migration: Add inputs column if it doesn't exist
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA table_info(results)")
+            columns = [column[1] for column in cursor.fetchall()]
+            
+            if "inputs" not in columns:
+                conn.execute("ALTER TABLE results ADD COLUMN inputs TEXT")
             
             conn.execute("CREATE INDEX IF NOT EXISTS idx_runs_timestamp ON runs (timestamp)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_results_run_id ON results (run_id)")
@@ -78,6 +87,7 @@ class Storage:
         model: str,
         response: Optional[str],
         expected: str,
+        inputs: Optional[Dict[str, Any]] = None,
         tokens_in: Optional[int] = None,
         tokens_out: Optional[int] = None,
         cost: Optional[float] = None,
@@ -85,12 +95,16 @@ class Storage:
         error: Optional[str] = None
     ) -> None:
         """Save a test result."""
+        import json
+        
+        inputs_json = json.dumps(inputs) if inputs else None
+        
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 """INSERT INTO results 
-                   (run_id, test_case_idx, model, response, expected, tokens_in, tokens_out, cost, latency_ms, error)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (run_id, test_case_idx, model, response, expected, tokens_in, tokens_out, cost, latency_ms, error)
+                   (run_id, test_case_idx, model, response, expected, tokens_in, tokens_out, cost, latency_ms, error, inputs)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (run_id, test_case_idx, model, response, expected, tokens_in, tokens_out, cost, latency_ms, error, inputs_json)
             )
     
     def get_run(self, run_id: str) -> Optional[Dict[str, Any]]:
@@ -113,6 +127,8 @@ class Storage:
     
     def get_results(self, run_id: str) -> List[Dict[str, Any]]:
         """Get all results for a run."""
+        import json
+        
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.execute(
@@ -123,6 +139,14 @@ class Storage:
             
             results = []
             for row in cursor:
+                # Parse inputs JSON
+                inputs = None
+                if row["inputs"]:
+                    try:
+                        inputs = json.loads(row["inputs"])
+                    except json.JSONDecodeError:
+                        inputs = None
+                
                 results.append({
                     "test_case_idx": row["test_case_idx"],
                     "model": row["model"],
@@ -132,7 +156,8 @@ class Storage:
                     "tokens_out": row["tokens_out"],
                     "cost": row["cost"],
                     "latency_ms": row["latency_ms"],
-                    "error": row["error"]
+                    "error": row["error"],
+                    "inputs": inputs
                 })
             
             return results

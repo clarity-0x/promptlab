@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .config import PromptConfig, TestCase, render_prompt
 from .models import TestResult
+from .matching import check_match
 
 
 class PromptRunner:
@@ -75,15 +76,22 @@ class PromptRunner:
                     messages.append({"role": "system", "content": config.system})
                 messages.append({"role": "user", "content": rendered_prompt})
                 
+                # Merge global parameters with per-test overrides
+                api_params = {}
+                api_params.update(config.parameters)
+                if test_case.parameters:
+                    api_params.update(test_case.parameters)
+                
                 # Lazy import litellm (heavy dependency, ~100MB import chain)
                 from litellm import acompletion as _acompletion
                 
-                # Make API call with timeout
+                # Make API call with timeout and parameters
                 response = await asyncio.wait_for(
                     _acompletion(
                         model=model,
                         messages=messages,
-                        timeout=self.timeout
+                        timeout=self.timeout,
+                        **api_params
                     ),
                     timeout=self.timeout + 5  # Give a bit of extra buffer
                 )
@@ -108,6 +116,19 @@ class PromptRunner:
                     # Cost calculation may fail for some models
                     pass
                 
+                # Determine match mode: test-specific, then config-specific, then default
+                match_mode = test_case.match or config.match
+                
+                # Evaluate match (wrap in thread for semantic mode to avoid blocking)
+                if match_mode == "semantic":
+                    match_result = await asyncio.to_thread(
+                        check_match, response_content, test_case.expected, match_mode, model
+                    )
+                else:
+                    match_result = check_match(
+                        response_content, test_case.expected, match_mode, None
+                    )
+                
                 return TestResult(
                     test_case_idx=test_case_idx,
                     model=model,
@@ -117,7 +138,8 @@ class PromptRunner:
                     tokens_in=tokens_in,
                     tokens_out=tokens_out,
                     cost=cost,
-                    latency_ms=latency_ms
+                    latency_ms=latency_ms,
+                    match_result=match_result
                 )
                 
             except asyncio.TimeoutError:
@@ -129,10 +151,31 @@ class PromptRunner:
                     error="Timeout"
                 )
             except Exception as e:
+                # Better API key error messages
+                error_msg = self._format_api_error(e, model)
                 return TestResult(
                     test_case_idx=test_case_idx,
                     model=model,
                     inputs=test_case.inputs,
                     expected=test_case.expected,
-                    error=f"{type(e).__name__}: {str(e)}"
+                    error=error_msg
                 )
+    
+    def _format_api_error(self, error: Exception, model: str) -> str:
+        """Format API errors with helpful environment variable hints."""
+        error_str = str(error).lower()
+        
+        # Check for authentication errors
+        if "authentication" in error_str or "api key" in error_str or "unauthorized" in error_str:
+            if model.startswith("gpt-") or model.startswith("openai/"):
+                return f"Authentication failed: Set OPENAI_API_KEY environment variable. Original error: {error}"
+            elif model.startswith("claude-") or model.startswith("anthropic/"):
+                return f"Authentication failed: Set ANTHROPIC_API_KEY environment variable. Original error: {error}"
+            elif model.startswith("gemini") or model.startswith("google/"):
+                return f"Authentication failed: Set GOOGLE_API_KEY environment variable. Original error: {error}"
+            elif model.startswith("command") or model.startswith("cohere/"):
+                return f"Authentication failed: Set COHERE_API_KEY environment variable. Original error: {error}"
+            else:
+                return f"Authentication failed: Check your API key for model {model}. Original error: {error}"
+        
+        return f"{type(error).__name__}: {str(error)}"

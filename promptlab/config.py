@@ -10,9 +10,17 @@ import yaml
 class TestCase:
     """A single test case with inputs and expected output."""
     
-    def __init__(self, inputs: Dict[str, Any], expected: str):
+    def __init__(
+        self, 
+        inputs: Dict[str, Any], 
+        expected: str, 
+        match: Optional[str] = None, 
+        parameters: Optional[Dict[str, Any]] = None
+    ):
         self.inputs = inputs
         self.expected = expected
+        self.match = match
+        self.parameters = parameters or {}
 
 
 class PromptConfig:
@@ -25,20 +33,31 @@ class PromptConfig:
         test_cases: List[Dict[str, Any]],
         description: Optional[str] = None,
         model: str = "gpt-4o",
-        system: Optional[str] = None
+        system: Optional[str] = None,
+        match: str = "exact",
+        parameters: Optional[Dict[str, Any]] = None
     ):
         self.name = name
         self.description = description
         self.model = model
         self.system = system
         self.prompt = prompt
+        self.match = match
+        self.parameters = parameters or {}
         
         # Convert test case dicts to TestCase objects
         self.test_cases = []
         for tc in test_cases:
             if not isinstance(tc, dict) or 'inputs' not in tc or 'expected' not in tc:
                 raise ValueError("Each test case must have 'inputs' and 'expected' fields")
-            self.test_cases.append(TestCase(tc['inputs'], tc['expected']))
+            self.test_cases.append(
+                TestCase(
+                    tc['inputs'], 
+                    tc['expected'],
+                    tc.get('match'),
+                    tc.get('parameters')
+                )
+            )
         
         if not self.test_cases:
             raise ValueError("At least one test case is required")
@@ -67,7 +86,9 @@ def load_prompt_config(file_path: Path) -> PromptConfig:
         test_cases=data['test_cases'],
         description=data.get('description'),
         model=data.get('model', 'gpt-4o'),
-        system=data.get('system')
+        system=data.get('system'),
+        match=data.get('match', 'exact'),
+        parameters=data.get('parameters')
     )
 
 
@@ -94,8 +115,8 @@ def get_config_hash(config: PromptConfig, models: List[str]) -> str:
     import hashlib
     
     # Create a deterministic string representation
-    config_str = f"{config.name}|{config.prompt}|{config.system or ''}|{','.join(models)}"
+    config_str = f"{config.name}|{config.prompt}|{config.system or ''}|{config.match}|{config.parameters}|{','.join(models)}"
     for test_case in config.test_cases:
-        config_str += f"|{test_case.inputs}|{test_case.expected}"
+        config_str += f"|{test_case.inputs}|{test_case.expected}|{test_case.match or ''}|{test_case.parameters}"
     
     return hashlib.md5(config_str.encode()).hexdigest()[:8]
