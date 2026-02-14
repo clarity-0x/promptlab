@@ -9,7 +9,7 @@ import click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from .config import load_prompt_config, get_config_hash
+from .config import load_prompt_config, get_config_hash, validate_prompt_file
 from .storage import Storage
 from .display import display_results, display_run_history, display_run_details
 from .compare import RunComparison
@@ -282,6 +282,21 @@ def export(run_id: str, output_format: str) -> None:
     except Exception as e:
         console.print(f"[red]Error:[/red] {str(e)}")
         sys.exit(1)
+
+
+@main.command()
+@click.argument('prompt_file', type=click.Path(exists=True, path_type=Path))
+def validate(prompt_file: Path) -> None:
+    """Validate a prompt YAML file without running tests."""
+    issues = validate_prompt_file(prompt_file)
+
+    if issues:
+        console.print(f"[red]Validation failed for {prompt_file}:[/red]")
+        for issue in issues:
+            console.print(f"  [red]✗[/red] {issue}")
+        sys.exit(1)
+    else:
+        console.print(f"[green]✓[/green] {prompt_file} is valid")
 
 
 if __name__ == '__main__':
